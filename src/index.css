@@ -1,0 +1,18 @@
+/* ./src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+body {
+  background-color: #f5f5dc; /* Light beige background */
+}
+
+h1 {
+  color: #2e2e2e; /* Dark text */
+}
+
+
+button:hover {
+  border-color: #0066cc; /* Soft blue border */
+}
