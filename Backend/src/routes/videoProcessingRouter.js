@@ -1,6 +1,6 @@
 const express = require('express');
-const { processVideo } = require('../controllers/processVideoController');
 const router = express.Router();
+const { processVideo } = require('../controllers/videoProcessingController');
 
 router.post('/', processVideo);
 

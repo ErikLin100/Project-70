@@ -18,11 +18,13 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 const downloadRouter = require('./src/routes/downloadRouter');
+const videoProcessingRouter = require('./src/routes/videoProcessingRouter');
 
 
 
 
 app.use('/api/download', downloadRouter);
+app.use('/api/process-video', videoProcessingRouter);
 
 
 // Error handling middleware
