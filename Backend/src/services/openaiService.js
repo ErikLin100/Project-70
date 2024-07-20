@@ -1,11 +1,14 @@
 const { Transcription } = require('openai');
+const fs = require('fs');
 require('dotenv').config(); // Load environment variables from .env file
 
-const transcribeAndAnalyzeAudio = async (videoPath) => {
+const transcribeAndAnalyzeAudio = async (audioPath) => {
   try {
+    console.log('Sending audio file to OpenAI API:', audioPath);
+
     const transcription = new Transcription(process.env.OPENAI_API_KEY);
     const response = await transcription.createTranscription(
-      fs.createReadStream(videoPath),
+      fs.createReadStream(audioPath),
       'whisper-1',
       {
         prompt: 'Transcribe the audio and identify the topics discussed with timestamps and short descriptions in JSON format.',

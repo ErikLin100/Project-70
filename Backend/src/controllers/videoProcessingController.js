@@ -2,42 +2,36 @@ const chokidar = require('chokidar');
 const path = require('path');
 const { transcribeAndAnalyzeAudio } = require('../services/openaiService');
 
-const downloadDirectory = path.join(__dirname, '../../temp');
+const downloadDirectory = path.join(__dirname, '../temp');
 
 const watcher = chokidar.watch(downloadDirectory, {
   persistent: true,
   ignoreInitial: true,
 });
 
-const handleNewVideoFile = async (filePath) => {
+const handleNewAudioFile = async (filePath) => {
   try {
     const result = await transcribeAndAnalyzeAudio(filePath);
-    // Handle the transcribed text, timestamps, and topic descriptions
     console.log('Transcription Result:', result);
 
     // You can add additional logic here to process the transcription result
     // and generate video clips or perform any other necessary operations
 
-    console.log('Video processing completed successfully');
+    console.log('Audio processing completed successfully');
   } catch (error) {
-    console.error('Error during video processing:', error);
+    console.error('Error during audio processing:', error);
   }
 };
 
-watcher.on('add', handleNewVideoFile);
+watcher.on('add', (filePath) => {
+  if (path.basename(filePath) === 'audio.mp3') {
+    handleNewAudioFile(filePath);
+  }
+});
 
 exports.processVideo = async (req, res) => {
-  const { filePath } = req.body;
-
   try {
-    const result = await transcribeAndAnalyzeAudio(filePath);
-    // Handle the transcribed text, timestamps, and topic descriptions
-    console.log('Transcription Result:', result);
-
-    // You can add additional logic here to process the transcription result
-    // and generate video clips or perform any other necessary operations
-
-    res.status(200).json({ message: 'Video processing completed successfully' });
+    res.status(200).json({ message: 'Video processing initiated' });
   } catch (error) {
     console.error('Error during video processing:', error);
     res.status(500).json({ error: 'Error during video processing' });
