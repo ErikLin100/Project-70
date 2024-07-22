@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
+const axios = require('axios');
+
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 exports.downloadVideo = async (req, res) => {
@@ -26,7 +28,7 @@ exports.downloadVideo = async (req, res) => {
 
     videoFileStream.on('finish', () => {
       console.log('Video file downloaded successfully');
-      extractAudio(videoFilePath, audioFilePath);
+      extractAudio(videoFilePath, audioFilePath, res);
     });
 
     videoFileStream.on('error', (err) => {
@@ -39,16 +41,26 @@ exports.downloadVideo = async (req, res) => {
   }
 };
 
-const extractAudio = (videoPath, audioPath) => {
-  ffmpeg(videoPath)
+const extractAudio = (videoPath, audioPath, res) => {
+  const ffmpegCommand = ffmpeg(videoPath)
     .output(audioPath)
     .on('end', () => {
       console.log('Audio file extracted successfully');
-      res.json({ videoFilePath, audioFilePath });
+      const audioFilePath = audioPath; // Define audioFilePath here
+      axios.post('http://localhost:3000/api/process-video', { audioFilePath })
+        .then(response => {
+          console.log('Audio file sent for processing:', response.data);
+          res.status(200).json({ message: 'Video and audio files downloaded successfully' });
+        })
+        .catch(error => {
+          console.error('Error sending audio file for processing:', error);
+          res.status(500).json({ error: 'Error sending audio file for processing' });
+        });
     })
     .on('error', (err) => {
       console.error('Error extracting audio:', err);
       res.status(500).json({ error: err.message });
-    })
-    .run();
+    });
+
+  ffmpegCommand.run();
 };
