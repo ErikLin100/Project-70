@@ -1,22 +1,53 @@
 const { transcribeAudio } = require('../services/openaiService');
+const path = require('path');
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
+const ffmpeg = require('fluent-ffmpeg');
+const fs = require('fs');
 
-exports.processVideo = async (req, res) => {
-  const { audioFilePath } = req.body;
+ffmpeg.setFfmpegPath(ffmpegPath);
 
+exports.processVideo = async ({ videoFilePath }) => {
   try {
-    const transcriptionResult = await transcribeAudio(audioFilePath);
-    if (transcriptionResult) {
-      console.log('Transcription Result:', transcriptionResult);
-      // You can add additional logic here to process the segments and timestamps
-      // and generate video clips or perform any other necessary operations
-    } else {
-      console.error('Error: Transcription result is null');
+    const tempDir = path.join(__dirname, '../temp');
+    const audioFilePath = path.join(tempDir, 'audio.mp3');
+
+    // Ensure temp directory exists
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir);
     }
 
-    console.log('Audio processing completed successfully');
-    res.status(200).json({ message: 'Audio processing completed successfully' });
+    // Extract audio from the video file
+    await extractAudio(videoFilePath, audioFilePath);
+
+    // Debug log before calling the service
+    console.log('Calling transcribeAudio with:', audioFilePath);
+    const transcriptionResult = await transcribeAudio(audioFilePath);
+
+
+    if (transcriptionResult && Array.isArray(transcriptionResult)) {
+      // Handle the transcription result as needed
+      console.log('Segments with Topics:', transcriptionResult);
+    } else {
+      console.error('Error: Transcription result is null or invalid');
+    }
   } catch (error) {
     console.error('Error during audio processing:', error);
-    res.status(500).json({ error: 'Error during audio processing' });
   }
+};
+
+const extractAudio = (videoPath, audioPath) => {
+  return new Promise((resolve, reject) => {
+    ffmpeg(videoPath)
+      .outputOptions('-vn') // Ensure only audio stream is extracted
+      .output(audioPath)
+      .on('end', () => {
+        console.log('Audio file extracted successfully');
+        resolve();
+      })
+      .on('error', (err) => {
+        console.error('Error extracting audio:', err);
+        reject(err);
+      })
+      .run();
+  });
 };
