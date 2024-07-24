@@ -1,4 +1,4 @@
-const { transcribeAudio } = require('../services/openaiService');
+const { transcribeAudio, identifyTopics } = require('../services/openaiService');
 const path = require('path');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
@@ -23,12 +23,15 @@ exports.processVideo = async ({ videoFilePath }) => {
     console.log('Calling transcribeAudio with:', audioFilePath);
     const transcriptionResult = await transcribeAudio(audioFilePath);
 
+   
 
-    if (transcriptionResult && Array.isArray(transcriptionResult)) {
-      // Handle the transcription result as needed
-      console.log('Segments with Topics:', transcriptionResult);
+    if (transcriptionResult && transcriptionResult.segments) {
+      console.log('Segments:', transcriptionResult.segments);
+      const topicsResult = await identifyTopics(transcriptionResult.segments);
+      console.log('Identified Topics:', topicsResult);
+      return topicsResult;
     } else {
-      console.error('Error: Transcription result is null or invalid');
+      throw new Error('Transcription result is missing segments');
     }
   } catch (error) {
     console.error('Error during audio processing:', error);
