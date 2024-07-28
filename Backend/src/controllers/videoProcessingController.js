@@ -11,22 +11,17 @@ exports.processVideo = async ({ videoFilePath }) => {
     const tempDir = path.join(__dirname, '../temp');
     const audioFilePath = path.join(tempDir, 'audio.mp3');
 
-    // Ensure temp directory exists
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir);
     }
 
-    // Extract audio from the video file
     await extractAudio(videoFilePath, audioFilePath);
 
-    // Debug log before calling the service
     console.log('Calling transcribeAudio with:', audioFilePath);
     const transcriptionResult = await transcribeAudio(audioFilePath);
 
-   
-
     if (transcriptionResult && transcriptionResult.segments) {
-      console.log('Segments:', transcriptionResult.segments);
+      console.log('Number of segments:', transcriptionResult.segments.length);
       const topicsResult = await identifyTopics(transcriptionResult.segments);
       console.log('Identified Topics:', topicsResult);
       return topicsResult;
@@ -35,6 +30,7 @@ exports.processVideo = async ({ videoFilePath }) => {
     }
   } catch (error) {
     console.error('Error during audio processing:', error);
+    throw error;
   }
 };
 
