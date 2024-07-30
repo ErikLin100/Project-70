@@ -45,3 +45,13 @@
 .button:hover::before {
   transform: scale(1.1) translate(-50%, -50%); /* Adjust scale and movement */
 }
+@keyframes gradientAnimation {
+  0% {background-position: 0% 50%;}
+  50% {background-position: 100% 50%;}
+  100% {background-position: 0% 50%;}
+}
+
+.animated-gradient {
+  background-size: 200% 200%;
+  animation: gradientAnimation 8s ease infinite;
+}
