@@ -3,6 +3,7 @@ const path = require('path');
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
 const fs = require('fs');
+const { generateClips } = require('./clipsController');
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
@@ -24,7 +25,11 @@ exports.processVideo = async ({ videoFilePath }) => {
       console.log('Number of segments:', transcriptionResult.segments.length);
       const topicsResult = await identifyTopics(transcriptionResult.segments);
       console.log('Identified Topics:', topicsResult);
-      return topicsResult;
+      
+      // Generate clips using the identified topics
+      const clips = await generateClips(videoFilePath, topicsResult);
+      
+      return { topics: topicsResult, clips };
     } else {
       throw new Error('Transcription result is missing segments');
     }
@@ -33,6 +38,7 @@ exports.processVideo = async ({ videoFilePath }) => {
     throw error;
   }
 };
+
 
 const extractAudio = (videoPath, audioPath) => {
   return new Promise((resolve, reject) => {

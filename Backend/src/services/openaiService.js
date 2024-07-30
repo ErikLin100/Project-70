@@ -45,7 +45,7 @@ Return ONLY a valid JSON array with the following structure, without any additio
 Ensure all time ranges are in the correct second-based format and that the JSON is valid without any trailing commas.
 
 Transcribed Segments:
-${segments.map(segment => JSON.stringify(segment)).join('\n')}
+${segmentChunk.map(segment => JSON.stringify(segment)).join('\n')}
 `;
 
 
@@ -53,7 +53,7 @@ ${segments.map(segment => JSON.stringify(segment)).join('\n')}
 
    
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 1000
     });
