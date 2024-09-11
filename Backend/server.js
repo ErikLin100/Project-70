@@ -1,5 +1,5 @@
 const express = require('express');
-const mongoose = require('mongoose');
+
 const dotenv = require('dotenv');
 const errorHandler = require('./src/middlewares/errorHandler');
 const cors = require('cors');
@@ -30,11 +30,7 @@ app.use('/api/process-video', videoProcessingRouter);
 // Error handling middleware
 app.use(errorHandler);
 
-// Database connection
-mongoose.connect(process.env.MONGODB_URI)
 
-    .then(() => console.log('MongoDB connected'))
-    .catch(err => console.error('MongoDB connection error:', err));
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {

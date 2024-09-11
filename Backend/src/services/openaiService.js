@@ -9,53 +9,62 @@ const transcribeAudio = async (audioPath) => {
     console.log('Sending to API...');
     const audioFile = fs.createReadStream(audioPath);
     const transcription = await openai.audio.transcriptions.create({
-      model: 'whisper-1',
       file: audioFile,
+      model: "whisper-1",
       response_format: "verbose_json",
-      timestamp_granularities: ["segment"],
     });
-    console.log('Full Transcription Response:', transcription);
+    console.log('Chunk transcription completed');
     return transcription;
   } catch (error) {
-    console.error('Error transcribing audio:', error);
+    console.error('Error transcribing audio chunk:', error);
     throw error;
   }
 };
 
 const identifyTopics = async (segments) => {
   try {
-    const prompt = `
-Analyze the following transcribed video segments and identify main topics that could potentially go viral on social media. For each topic:
+    const segmentData = segments.map(segment => ({
+      text: segment.text,
+      start: segment.start,
+      end: segment.end
+    }));
 
-1. Provide a catchy, attention-grabbing title (max 20 characters).
-2. Identify a segment with full context (aim for 60-240 seconds in length).
-3. Include a brief description of why this segment could be interesting or shareable (max 150 characters).
-4. Format the time range as start_second-end_second (e.g., 90-225).
+    const prompt = `
+Analyze the following transcribed segments from a long-form video content. Identify distinct, complete topics or discussions. For each topic:
+
+1. Provide a simple, descriptive title (max 30 characters).
+2. Identify the full segment that captures the entire topic or discussion from start to finish.
+3. Format the time range as start_second-end_second (e.g., 90-225).
+4. Ensure each selected segment is self-contained, providing full context without cutting off mid-thought or mid-sentence.
+5. Each segment MUST be at least 60 seconds long, and ideally between 2 to 6 minutes in duration.
+6. Do not include segments shorter than 60 seconds under any circumstances.
+7. If a topic is shorter than 60 seconds, either expand its context or merge it with a related topic to meet the minimum duration.
+8. For topics longer than 6 minutes, try to find logical break points to split them into multiple segments, each at least 2 minutes long.
+9. Avoid overlapping segments. If topics blend together, choose the most logical breakpoint.
+10. Include a few seconds before and after the main content to capture more context, if available.
+
+Aim to identify approximately 15-30 segments for a 3-hour video, scaling proportionally for shorter or longer content.
 
 Return ONLY a valid JSON array with the following structure, without any additional text or explanation:
 
 [
   {
-    "title": "Catchy Title Here",
-    "time_range": "start_second-end_second",
-    "description": "Brief description of why this is interesting or shareable"
+    "title": "Descriptive Topic Title",
+    "time_range": "start_second-end_second"
   }
 ]
 
 Ensure all time ranges are in the correct second-based format and that the JSON is valid without any trailing commas.
 
 Transcribed Segments:
-${segmentChunk.map(segment => JSON.stringify(segment)).join('\n')}
+${JSON.stringify(segmentData)}
 `;
 
-
-
-
-   
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [{ role: 'user', content: prompt }],
-      max_tokens: 1000
+      temperature: 0.6,
+      max_tokens: 4000
     });
 
     const topicsText = response.choices[0].message.content;
@@ -64,10 +73,21 @@ ${segmentChunk.map(segment => JSON.stringify(segment)).join('\n')}
     // Remove code block markers if present
     const jsonString = topicsText.replace(/```json\n|\n```/g, '').trim();
     
-    return JSON.parse(jsonString);
+    const parsedTopics = JSON.parse(jsonString);
+    console.log('Parsed topics:', JSON.stringify(parsedTopics, null, 2));
+
+    // Validate and filter topics
+    const validatedTopics = parsedTopics.filter(topic => {
+      const [start, end] = topic.time_range.split('-').map(Number);
+      return (end - start) >= 60; // Ensure minimum 60 seconds duration
+    });
+
+    console.log('Validated topics:', JSON.stringify(validatedTopics, null, 2));
+
+    return validatedTopics;
   } catch (error) {
     console.error('Error identifying topics:', error);
-    return { error: 'Unable to parse topics', rawResponse: topicsText };
+    throw error;
   }
 };
 

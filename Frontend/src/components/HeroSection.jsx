@@ -25,12 +25,14 @@ function HeroSection() {
   }, []);
 
   return (
-    <div className="rounded-lg bg-gradient-to-r from-purple-500 to-indigo-600 text-white py-20 px-4 sm:px-8 animated-gradient">
+    <div className="mt-8 rounded-lg bg-main-gradient from-main-start to-main-end text-white py-20 px-4 sm:px-8 animated-gradient overflow-hidden">
       <div className="container mx-auto text-center">
         <h1 className="leading-slightly-relaxed text-5xl font-semibold font-opensans mb-4 text-[#313030]">Welcome to HiLight, your AI content companion</h1>
-        <p className={`font-normal font-opensans text-xl my-20 animate__animated ${animationClass} text-glow`}>
-          {texts[currentTextIndex]}
-        </p>
+        <div className="my-12 mb-12 h-20 relative">
+          <p className={`font-normal font-opensans text-xl my-12 animate__animated ${animationClass} text-glow leading-slightly-relaxed absolute w-full left-0 right-0`}>
+            {texts[currentTextIndex]}
+          </p>
+        </div>
         <Link to="/signup" className="bg-white font-semibold font-opensans text-purple-600 py-2 px-6 rounded-full text-lg hover:bg-gray-100 transition duration-300">
           Get Started
         </Link>

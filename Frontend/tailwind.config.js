@@ -20,6 +20,13 @@ module.exports = {
       lineHeight: {
         'slightly-relaxed': '1.3',
       },
+      backgroundImage: {
+        'main-gradient': 'linear-gradient(to right, var(--tw-gradient-stops))',
+      },
+      gradientColorStops: {
+        'main-start': '#8B5CF6',
+        'main-end': '#6366F1',
+      },
     },
   },
   plugins: [],

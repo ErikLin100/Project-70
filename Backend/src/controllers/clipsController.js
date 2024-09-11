@@ -11,7 +11,8 @@ exports.generateClips = async (videoFilePath, topics) => {
   const clips = [];
 
   for (const topic of topics) {
-    const [start, end] = topic.time_range.split('-').map(Number);
+    let [start, end] = topic.time_range.split('-').map(Number);
+
     const clipPath = path.join(clipsDir, `${topic.title.replace(/\s+/g, '_')}.mp4`);
 
     await new Promise((resolve, reject) => {
@@ -24,7 +25,8 @@ exports.generateClips = async (videoFilePath, topics) => {
           clips.push({
             title: topic.title,
             description: topic.description,
-            path: clipPath
+            path: clipPath,
+            duration: end - start
           });
           resolve();
         })

@@ -1,9 +1,19 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 function LandingNavbar() {
-  const { toggleLogin } = useAuth();
+  const { user, login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogin = async () => {
+    try {
+      await login();
+      navigate('/home');
+    } catch (error) {
+      console.error('Failed to log in', error);
+    }
+  };
 
   return (
     <nav className="bg-transparent p-4">
@@ -14,8 +24,11 @@ function LandingNavbar() {
           <Link to="/pricing" className="font-semibold font-opensans text-[#313030] mx-4">Pricing</Link>
         </div>
         <div>
-          <button onClick={toggleLogin} className="font-semibold font-opensans text-[#313030] mr-4">Login</button>
-          <Link to="/signup" className="font-semibold font-opensans bg-white text-purple-600 py-2 px-4 rounded-full">Sign Up</Link>
+          {user ? (
+            <Link to="/home" className="font-semibold font-opensans bg-white text-purple-600 py-2 px-4 rounded-full">Dashboard</Link>
+          ) : (
+            <button onClick={handleLogin} className="font-semibold font-opensans bg-white text-purple-600 py-2 px-4 rounded-full">Sign In with Google</button>
+          )}
         </div>
       </div>
     </nav>

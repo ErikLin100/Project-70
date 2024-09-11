@@ -8,21 +8,22 @@ import ActionPage from './pages/ActionPage';
 import ResultsPage from './pages/ResultsPage';
 
 function MainContent() {
-  const { isLoggedIn } = useAuth();
+  const { user } = useAuth();
 
   return (
     <div className="app">
-      {isLoggedIn && <Navbar />}
+      {user && <Navbar />}
       <div className="container mx-auto px-2 py-4">
         <Routes>
-          <Route path="/" element={isLoggedIn ? <Navigate to="/home" /> : <LandingPage />} />
-          <Route path="/home" element={isLoggedIn ? <HomePage /> : <Navigate to="/" />} />
-          {isLoggedIn && (
+          <Route path="/" element={user ? <Navigate to="/home" /> : <LandingPage />} />
+          <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" />} />
+          {user && (
             <>
               <Route path="/action" element={<ActionPage />} />
               <Route path="/results" element={<ResultsPage />} />
             </>
           )}
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
     </div>
