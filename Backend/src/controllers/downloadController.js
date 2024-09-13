@@ -9,12 +9,18 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 
 exports.downloadVideo = async (req, res) => {
   const youtubeUrl = req.body.url;
+  const uid = req.body.uid;
+
+  if (!uid) {
+    return res.status(400).json({ error: 'User ID is required' });
+  }
 
   try {
     const info = await ytdl.getInfo(youtubeUrl);
-    const videoTitle = info.videoDetails.title.replace(/[^\w\s]/gi, '');
+    const videoTitle = info.videoDetails.title.replace(/[^\w\s-]/gi, '');
+    const sanitizedTitle = videoTitle.replace(/\s+/g, '_').toLowerCase();
 
-    const videoFilePath = path.join(__dirname, '../temp', `video.webm`);
+    const videoFilePath = path.join(__dirname, '../temp', `${sanitizedTitle}.webm`);
 
     const videoStream = ytdl(youtubeUrl, {
       quality: 'highestvideo',
@@ -26,19 +32,17 @@ exports.downloadVideo = async (req, res) => {
     videoStream.pipe(videoFileStream);
 
     videoFileStream.on('finish', async () => {
-      console.log('Video file downloaded successfully');
-      await processVideo({ videoFilePath }); // Call the processVideo function with the videoFilePath
+      try {
+        const result = await processVideo({ videoFilePath, videoTitle, uid });
+        res.status(200).json({ message: 'Video processed successfully', result });
+      } catch (error) {
+        console.error('Error processing video:', error);
+        res.status(500).json({ error: 'Failed to process video', details: error.message });
+      }
     });
-
-    videoFileStream.on('error', (err) => {
-      console.error('Error writing video file:', err);
-      res.status(500).json({ error: err.message });
-    });
-
-    res.status(200).json({ message: 'Video download started and processing will begin shortly' });
 
   } catch (err) {
     console.error('Error fetching video info:', err);
-    res.status(500).json({ error: 'Failed to fetch video information' });
+    res.status(500).json({ error: 'Failed to fetch video information', details: err.message });
   }
 };

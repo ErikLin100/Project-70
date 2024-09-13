@@ -24,7 +24,7 @@ exports.generateClips = async (videoFilePath, topics) => {
           console.log(`Clip generated: ${clipPath}`);
           clips.push({
             title: topic.title,
-            description: topic.description,
+            description: topic.description || '',  // Use an empty string if description is undefined
             path: clipPath,
             duration: end - start
           });

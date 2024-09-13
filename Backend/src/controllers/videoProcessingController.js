@@ -4,7 +4,7 @@ const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path;
 const ffmpeg = require('fluent-ffmpeg');
 const fs = require('fs');
 const { generateClips } = require('./clipsController');
-
+const { uploadFile, saveProjectToFirestore, saveClipToFirestore, updateProjectStatus } = require('../services/firebaseService');
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const ffprobePath = require('@ffprobe-installer/ffprobe').path;
@@ -51,6 +51,7 @@ const splitAudio = (audioPath, chunkDuration = 1500) => {  // 1500 seconds = 25 
     });
   });
 };
+
 const extractAudio = (videoPath, audioPath) => {
   return new Promise((resolve, reject) => {
     ffmpeg(videoPath)
@@ -70,14 +71,30 @@ const extractAudio = (videoPath, audioPath) => {
       .run();
   });
 };
-exports.processVideo = async ({ videoFilePath }) => {
+
+exports.processVideo = async ({ videoFilePath, videoTitle, uid }) => {
   try {
+    console.log('Starting video processing');
     const tempDir = path.join(__dirname, '../temp');
     const audioFilePath = path.join(tempDir, 'audio.mp3');
 
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir);
     }
+
+    if (!uid) {
+      throw new Error('User ID is required for processing video');
+    }
+
+    // Create project first with 'Processing' status
+    const projectId = await saveProjectToFirestore({
+      title: videoTitle,
+      status: 'Processing',
+      createdAt: new Date(),
+      uid: uid
+    });
+
+    console.log('Project created with ID:', projectId);
 
     await extractAudio(videoFilePath, audioFilePath);
 
@@ -100,11 +117,31 @@ exports.processVideo = async ({ videoFilePath }) => {
     // Generate clips using all identified topics
     const clips = await generateClips(videoFilePath, allTopics);
 
-    return { topics: allTopics, clips };
+    // Upload full video to Firebase Storage
+    const videoUrl = await uploadFile(videoFilePath, `videos/${path.basename(videoFilePath)}`);
+
+    // Save clips to Firestore
+    for (const clip of clips) {
+      const clipUrl = await uploadFile(clip.path, `clips/${path.basename(clip.path)}`);
+      await saveClipToFirestore({
+        projectId,
+        title: clip.title,
+        description: clip.description,
+        url: clipUrl,
+        duration: clip.duration
+      });
+    }
+
+    console.log('All clips saved to Firestore');
+
+    // Update project status to 'Completed'
+    await updateProjectStatus(projectId, 'Completed');
+
+    console.log('Project status updated to Completed');
+
+    return { projectId, topics: allTopics, clips };
   } catch (error) {
     console.error('Error during video processing:', error);
     throw error;
   }
 };
-
-

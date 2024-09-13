@@ -50,6 +50,7 @@ Return ONLY a valid JSON array with the following structure, without any additio
 [
   {
     "title": "Descriptive Topic Title",
+    "description": "Brief description of the topic (1-2 sentences)",
     "time_range": "start_second-end_second"
   }
 ]

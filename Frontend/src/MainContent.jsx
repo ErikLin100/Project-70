@@ -4,8 +4,7 @@ import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import LandingPage from './pages/LandingPage';
 import HomePage from './pages/HomePage';
-import ActionPage from './pages/ActionPage';
-import ResultsPage from './pages/ResultsPage';
+import ProjectPage from './pages/ProjectPage';
 
 function MainContent() {
   const { user } = useAuth();
@@ -18,10 +17,7 @@ function MainContent() {
           <Route path="/" element={user ? <Navigate to="/home" /> : <LandingPage />} />
           <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" />} />
           {user && (
-            <>
-              <Route path="/action" element={<ActionPage />} />
-              <Route path="/results" element={<ResultsPage />} />
-            </>
+            <Route path="/project/:projectId" element={<ProjectPage />} />
           )}
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
