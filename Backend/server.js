@@ -35,7 +35,16 @@ app.get('/api/status/:projectId', async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     }
   });
-
+  app.post('/api/save-edits', async (req, res) => {
+    try {
+      const { projectId, selectedClips, editingOptions } = req.body;
+      const updatedClips = await processEdits(projectId, selectedClips, editingOptions);
+      res.json(updatedClips);
+    } catch (error) {
+      console.error('Error processing edits:', error);
+      res.status(500).json({ error: 'Failed to process edits' });
+    }
+  });
 app.get('/api/projects', async (req, res) => {
   try {
     const projects = await getAllProjects();

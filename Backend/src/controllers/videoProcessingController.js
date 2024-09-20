@@ -5,6 +5,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const fs = require('fs');
 const { generateClips } = require('./clipsController');
 const { uploadFile, saveProjectToFirestore, saveClipToFirestore, updateProjectStatus } = require('../services/firebaseService');
+
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const ffprobePath = require('@ffprobe-installer/ffprobe').path;
@@ -72,6 +73,23 @@ const extractAudio = (videoPath, audioPath) => {
   });
 };
 
+const clearTempFolder = () => {
+  const tempDir = path.join(__dirname, '../temp');
+  fs.readdir(tempDir, (err, files) => {
+    if (err) {
+      console.error('Error reading temp directory:', err);
+      return;
+    }
+
+    for (const file of files) {
+      fs.unlink(path.join(tempDir, file), err => {
+        if (err) console.error(`Failed to delete ${file}:`, err);
+        else console.log(`Successfully deleted ${file}`);
+      });
+    }
+  });
+};
+
 exports.processVideo = async ({ videoFilePath, videoTitle, uid }) => {
   try {
     console.log('Starting video processing');
@@ -86,12 +104,16 @@ exports.processVideo = async ({ videoFilePath, videoTitle, uid }) => {
       throw new Error('User ID is required for processing video');
     }
 
-    // Create project first with 'Processing' status
+    // Upload full video to Firebase Storage first
+    const videoUrl = await uploadFile(videoFilePath, `videos/${path.basename(videoFilePath)}`);
+
+    // Create project with 'Processing' status
     const projectId = await saveProjectToFirestore({
       title: videoTitle,
       status: 'Processing',
       createdAt: new Date(),
-      uid: uid
+      uid: uid,
+      fullVideoUrl: videoUrl // Now this is valid
     });
 
     console.log('Project created with ID:', projectId);
@@ -117,9 +139,6 @@ exports.processVideo = async ({ videoFilePath, videoTitle, uid }) => {
     // Generate clips using all identified topics
     const clips = await generateClips(videoFilePath, allTopics);
 
-    // Upload full video to Firebase Storage
-    const videoUrl = await uploadFile(videoFilePath, `videos/${path.basename(videoFilePath)}`);
-
     // Save clips to Firestore
     for (const clip of clips) {
       const clipUrl = await uploadFile(clip.path, `clips/${path.basename(clip.path)}`);
@@ -138,6 +157,8 @@ exports.processVideo = async ({ videoFilePath, videoTitle, uid }) => {
     await updateProjectStatus(projectId, 'Completed');
 
     console.log('Project status updated to Completed');
+
+  
 
     return { projectId, topics: allTopics, clips };
   } catch (error) {

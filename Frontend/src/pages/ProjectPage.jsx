@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ClipCard from '../components/ClipCard';
+import VideoEditor from '../components/VideoEditor'; // Import the VideoEditor component
 
 const ProjectPage = () => {
   const { projectId } = useParams();
   const [project, setProject] = useState(null);
   const [status, setStatus] = useState('Processing');
   const [clips, setClips] = useState([]);
+  const [fullVideoUrl, setFullVideoUrl] = useState('');
   const [error, setError] = useState(null);
+  const [selectedClips, setSelectedClips] = useState([]);
+  const [editingOptions, setEditingOptions] = useState({});
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -15,7 +19,7 @@ const ProjectPage = () => {
         setError('No project ID provided');
         return;
       }
-  
+
       try {
         const response = await fetch(`http://localhost:3000/api/projects/${projectId}`);
         if (!response.ok) {
@@ -25,8 +29,8 @@ const ProjectPage = () => {
         setProject(data);
         setStatus(data.status || 'Processing');
         setClips(data.clips || []);
-  
-        // If still processing, poll again after 5 seconds
+        setFullVideoUrl(data.fullVideoUrl || ''); // Ensure this is set from the project data
+
         if (data.status === 'Processing') {
           setTimeout(fetchProject, 5000);
         }
@@ -35,7 +39,7 @@ const ProjectPage = () => {
         setError('Failed to fetch project details. Please try again later.');
       }
     };
-  
+
     fetchProject();
   }, [projectId]);
 
@@ -47,10 +51,48 @@ const ProjectPage = () => {
     setClips(clips.filter(clip => clip.id !== clipId));
   };
 
+  const handleClipSelect = (clipId) => {
+    setSelectedClips(prev => 
+      prev.includes(clipId) ? prev.filter(id => id !== clipId) : [...prev, clipId]
+    );
+  };
+
+  const handleEditingOptionChange = (options) => {
+    setEditingOptions(options);
+  };
+
+  const handleSaveEdits = async () => {
+    const response = await fetch('http://localhost:3000/api/save-edits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        projectId,
+        selectedClips,
+        editingOptions
+      })
+    });
+
+    if (response.ok) {
+      const updatedClips = await response.json();
+      setClips(updatedClips);
+      setSelectedClips([]);
+      setEditingOptions({});
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-white mb-8 text-center">Your Clips</h1>
+        {project && fullVideoUrl && (
+          <VideoEditor 
+            title={project.title} 
+            description={project.description} 
+            url={fullVideoUrl} 
+            onDelete={() => console.log('Delete video logic here')} // Implement delete logic if needed
+          />
+        )}
+
+        <h2 className="text-3xl font-bold text-white mb-8">Clips</h2>
         {status === 'Processing' ? (
           <div className="text-center">
             <p className="text-2xl text-white mb-4">Your clips are being generated...</p>
@@ -67,6 +109,8 @@ const ProjectPage = () => {
                 url={clip.url}
                 duration={clip.duration}
                 onDelete={handleDeleteClip}
+                onSelect={handleClipSelect}
+                isSelected={selectedClips.includes(clip.id)}
               />
             ))}
           </div>
