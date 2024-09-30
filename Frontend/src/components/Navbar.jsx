@@ -37,7 +37,19 @@ const Navbar = () => {
                   to="/action"
                   className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
                 >
-                  Get Clips
+                  Clips
+                </Link>
+                <Link
+                  to="/action"
+                  className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Story
+                </Link>
+                <Link
+                  to="/action"
+                  className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+                >
+                  Saved
                 </Link>
                 <button
                   onClick={handleLogout}

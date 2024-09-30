@@ -1,11 +1,11 @@
 const express = require('express');
-
 const dotenv = require('dotenv');
 const errorHandler = require('./src/middlewares/errorHandler');
 const cors = require('cors');
 const { deleteClip } = require('./src/services/firebaseService');
-const { getProjectStatus } = require('./src/services/projectService'); // Add this line
+const { getProjectStatus } = require('./src/services/projectService');
 const { getAllProjects, getProjectById } = require('./src/services/projectService');
+const { editClips } = require('./src/controllers/videoProcessingController'); // Import the editClips function
 
 // Load environment variables
 dotenv.config();
@@ -27,44 +27,46 @@ app.use('/api/process-video', videoProcessingRouter);
 
 app.get('/api/status/:projectId', async (req, res) => {
     try {
-      const { projectId } = req.params;
-      const projectStatus = await getProjectStatus(projectId);
-      res.json(projectStatus);
+        const { projectId } = req.params;
+        const projectStatus = await getProjectStatus(projectId);
+        res.json(projectStatus);
     } catch (error) {
-      console.error('Error fetching project status:', error);
-      res.status(500).json({ error: 'Internal server error' });
+        console.error('Error fetching project status:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-  });
-  app.post('/api/save-edits', async (req, res) => {
+});
+
+app.post('/api/save-edits', async (req, res) => {
     try {
-      const { projectId, selectedClips, editingOptions } = req.body;
-      const updatedClips = await processEdits(projectId, selectedClips, editingOptions);
-      res.json(updatedClips);
+        const { projectId, selectedClips, editingOptions } = req.body;
+        const updatedClips = await editClips({ projectId, selectedClips, editingOptions }); // Use editClips instead of processEdits
+        res.json(updatedClips);
     } catch (error) {
-      console.error('Error processing edits:', error);
-      res.status(500).json({ error: 'Failed to process edits' });
+        console.error('Error processing edits:', error);
+        res.status(500).json({ error: 'Failed to process edits' });
     }
-  });
+});
+
 app.get('/api/projects', async (req, res) => {
-  try {
-    const projects = await getAllProjects();
-    res.json(projects);
-  } catch (error) {
-    console.error('Error fetching projects:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+    try {
+        const projects = await getAllProjects();
+        res.json(projects);
+    } catch (error) {
+        console.error('Error fetching projects:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 app.get('/api/projects/:projectId', async (req, res) => {
     try {
-      const { projectId } = req.params;
-      const project = await getProjectById(projectId);
-      res.json(project);
+        const { projectId } = req.params;
+        const project = await getProjectById(projectId);
+        res.json(project);
     } catch (error) {
-      console.error('Error fetching project:', error);
-      res.status(500).json({ error: 'Internal server error' });
+        console.error('Error fetching project:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-  });
+});
 
 // Error handling middleware
 app.use(errorHandler);
@@ -90,12 +92,12 @@ process.on('uncaughtException', (err) => {
 });
 
 app.delete('/api/clips/:clipId', async (req, res) => {
-  try {
-    const { clipId } = req.params;
-    await deleteClip(clipId);
-    res.status(200).json({ message: 'Clip deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting clip:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+    try {
+        const { clipId } = req.params;
+        await deleteClip(clipId);
+        res.status(200).json({ message: 'Clip deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting clip:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });

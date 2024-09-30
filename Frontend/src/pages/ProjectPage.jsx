@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import ClipCard from '../components/ClipCard';
-import VideoEditor from '../components/VideoEditor'; // Import the VideoEditor component
+import VideoEditor from '../components/VideoEditor';
 
 const ProjectPage = () => {
   const { projectId } = useParams();
@@ -29,7 +29,10 @@ const ProjectPage = () => {
         setProject(data);
         setStatus(data.status || 'Processing');
         setClips(data.clips || []);
-        setFullVideoUrl(data.fullVideoUrl || ''); // Ensure this is set from the project data
+        setFullVideoUrl(data.fullVideoUrl || '');
+
+        // Set all clips as selected by default
+        setSelectedClips(data.clips.map(clip => clip.id));
 
         if (data.status === 'Processing') {
           setTimeout(fetchProject, 5000);
@@ -57,9 +60,15 @@ const ProjectPage = () => {
     );
   };
 
-  const handleEditingOptionChange = (options) => {
-    setEditingOptions(options);
-  };
+  const handleEditingOptionChange = useCallback((options) => {
+    setEditingOptions(prev => ({
+      ...prev,
+      [options.id]: {
+        captionsEnabled: options.captionsEnabled,
+        phoneRatioEnabled: options.phoneRatioEnabled,
+      }
+    }));
+  }, []);
 
   const handleSaveEdits = async () => {
     const response = await fetch('http://localhost:3000/api/save-edits', {
@@ -75,7 +84,7 @@ const ProjectPage = () => {
     if (response.ok) {
       const updatedClips = await response.json();
       setClips(updatedClips);
-      setSelectedClips([]);
+      setSelectedClips([]); // Clear selection after saving
       setEditingOptions({});
     }
   };
@@ -110,11 +119,13 @@ const ProjectPage = () => {
                 duration={clip.duration}
                 onDelete={handleDeleteClip}
                 onSelect={handleClipSelect}
-                isSelected={selectedClips.includes(clip.id)}
+                isSelected={selectedClips.includes(clip.id)} // Check if the clip is selected
+                onEditingOptionChange={handleEditingOptionChange} // Pass the function to handle editing options
               />
             ))}
           </div>
         )}
+        <button onClick={handleSaveEdits} className="mt-4 bg-blue-500 text-white py-2 px-4 rounded">Save Edits</button>
       </div>
     </div>
   );
