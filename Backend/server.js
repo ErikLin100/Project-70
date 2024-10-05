@@ -2,10 +2,9 @@ const express = require('express');
 const dotenv = require('dotenv');
 const errorHandler = require('./src/middlewares/errorHandler');
 const cors = require('cors');
-const { deleteClip } = require('./src/services/firebaseService');
-const { getProjectStatus } = require('./src/services/projectService');
-const { getAllProjects, getProjectById } = require('./src/services/projectService');
-const { editClips } = require('./src/controllers/videoProcessingController'); // Import the editClips function
+const { deleteClip, deleteProject } = require('./src/services/firebaseService');
+const { getProjectStatus, getAllProjects, getProjectById } = require('./src/services/projectService');
+const { editClips } = require('./src/controllers/videoProcessingController');
 
 // Load environment variables
 dotenv.config();
@@ -39,11 +38,32 @@ app.get('/api/status/:projectId', async (req, res) => {
 app.post('/api/save-edits', async (req, res) => {
     try {
         const { projectId, selectedClips, editingOptions } = req.body;
-        const updatedClips = await editClips({ projectId, selectedClips, editingOptions }); // Use editClips instead of processEdits
+        const updatedClips = await editClips({ projectId, selectedClips, editingOptions });
         res.json(updatedClips);
     } catch (error) {
         console.error('Error processing edits:', error);
         res.status(500).json({ error: 'Failed to process edits' });
+    }
+});
+
+app.get('/api/projects-detailed', async (req, res) => {
+    try {
+        const projects = await getAllProjects();
+        const detailedProjects = await Promise.all(projects.map(async (project) => {
+            const projectDetails = await getProjectById(project.id);
+            return {
+                id: project.id,
+                title: project.title,
+                status: project.status,
+                createdAt: project.createdAt,
+                clipCount: projectDetails.clips ? projectDetails.clips.length : 0,
+                duration: projectDetails.clips ? projectDetails.clips.reduce((total, clip) => total + clip.duration, 0) : 0
+            };
+        }));
+        res.json(detailedProjects);
+    } catch (error) {
+        console.error('Error fetching detailed projects:', error);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -68,6 +88,28 @@ app.get('/api/projects/:projectId', async (req, res) => {
     }
 });
 
+app.delete('/api/clips/:clipId', async (req, res) => {
+    try {
+        const { clipId } = req.params;
+        await deleteClip(clipId);
+        res.status(200).json({ message: 'Clip deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting clip:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.delete('/api/projects/:projectId', async (req, res) => {
+    try {
+        const { projectId } = req.params;
+        await deleteProject(projectId);
+        res.status(200).json({ message: 'Project deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting project:', error);
+        res.status(500).json({ error: 'Failed to delete project' });
+    }
+});
+
 // Error handling middleware
 app.use(errorHandler);
 
@@ -89,15 +131,4 @@ process.on('uncaughtException', (err) => {
     server.close(() => {
         process.exit(1);
     });
-});
-
-app.delete('/api/clips/:clipId', async (req, res) => {
-    try {
-        const { clipId } = req.params;
-        await deleteClip(clipId);
-        res.status(200).json({ message: 'Clip deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting clip:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
 });

@@ -14,6 +14,7 @@
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@ffprobe-installer/ffprobe": "^2.1.2",
     "axios": "^1.7.2",
+    "backend": "file:",
     "bull": "^4.14.0",
     "chokidar": "^3.6.0",
     "cors": "^2.8.5",

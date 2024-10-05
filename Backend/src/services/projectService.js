@@ -1,4 +1,5 @@
 const { db } = require('../../config/firebase');
+const { deleteProject } = require('./firebaseService');
 
 exports.getProjectStatus = async (projectId) => {
     try {
@@ -26,17 +27,43 @@ exports.getProjectStatus = async (projectId) => {
       console.error('Error getting project status:', error);
       throw error;
     }
-  };
+};
 
 exports.getAllProjects = async () => {
-  try {
-    const projectsSnapshot = await db.collection('projects').orderBy('createdAt', 'desc').get();
-    return projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  } catch (error) {
-    console.error('Error getting all projects:', error);
-    throw error;
-  }
+    try {
+      const projectsSnapshot = await db.collection('projects').orderBy('createdAt', 'desc').get();
+      
+      // Get all project IDs
+      const projectIds = projectsSnapshot.docs.map(doc => doc.id);
+      
+      // Fetch all clips for these projects in a single query
+      const clipsSnapshot = await db.collection('clips')
+        .where('projectId', 'in', projectIds)
+        .get();
+  
+      // Count clips for each project
+      const clipCounts = {};
+      clipsSnapshot.forEach(doc => {
+        const clip = doc.data();
+        clipCounts[clip.projectId] = (clipCounts[clip.projectId] || 0) + 1;
+      });
+  
+      // Map projects with clip counts
+      return projectsSnapshot.docs.map(doc => {
+        const projectData = doc.data();
+        return {
+          id: doc.id,
+          ...projectData,
+          clipCount: clipCounts[doc.id] || 0,
+          status: clipCounts[doc.id] > 0 ? 'Completed' : projectData.status
+        };
+      });
+    } catch (error) {
+      console.error('Error getting all projects:', error);
+      throw error;
+    }
 };
+
 exports.getProjectById = async (projectId) => {
   try {
     console.log('Fetching project with ID:', projectId);
@@ -57,10 +84,9 @@ exports.getProjectById = async (projectId) => {
 
     // Create a full video object similar to clips
     const fullVideo = {
-      id: projectDoc.id, // You can assign an ID if needed
-      title: projectData.title, // Assuming you have a title in projectData
-      url: projectData.fullVideoUrl || '', // The URL of the full video
-      // Add any other properties you want to include
+      id: projectDoc.id,
+      title: projectData.title,
+      url: projectData.fullVideoUrl || '',
     };
 
     // Return the project data along with clips and full video object
@@ -69,10 +95,13 @@ exports.getProjectById = async (projectId) => {
       ...projectData, 
       status, 
       clips,
-      fullVideo // Return the full video as an object
+      fullVideo
     };
   } catch (error) {
     console.error('Error getting project by ID:', error);
     throw error;
   }
 };
+
+// Export the deleteProject function from firebaseService
+exports.deleteProject = deleteProject;
