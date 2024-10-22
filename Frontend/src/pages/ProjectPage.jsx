@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import ClipCard from '../components/ClipCard';
 import VideoEditor from '../components/VideoEditor';
@@ -12,6 +12,16 @@ const ProjectPage = () => {
   const [error, setError] = useState(null);
   const [selectedClips, setSelectedClips] = useState([]);
   const [editingOptions, setEditingOptions] = useState({});
+
+  const handleEditingOptionChange = useCallback((options) => {
+    setEditingOptions(prev => ({
+      ...prev,
+      [options.id]: {
+        captionsEnabled: options.captionsEnabled,
+        phoneRatioEnabled: options.phoneRatioEnabled,
+      }
+    }));
+  }, []);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -46,10 +56,6 @@ const ProjectPage = () => {
     fetchProject();
   }, [projectId]);
 
-  if (error) {
-    return <div className="text-center text-white">{error}</div>;
-  }
-
   const handleDeleteClip = (clipId) => {
     setClips(clips.filter(clip => clip.id !== clipId));
   };
@@ -59,16 +65,6 @@ const ProjectPage = () => {
       prev.includes(clipId) ? prev.filter(id => id !== clipId) : [...prev, clipId]
     );
   };
-
-  const handleEditingOptionChange = useCallback((options) => {
-    setEditingOptions(prev => ({
-      ...prev,
-      [options.id]: {
-        captionsEnabled: options.captionsEnabled,
-        phoneRatioEnabled: options.phoneRatioEnabled,
-      }
-    }));
-  }, []);
 
   const handleSaveEdits = async () => {
     const response = await fetch('http://localhost:3000/api/save-edits', {
@@ -89,26 +85,30 @@ const ProjectPage = () => {
     }
   };
 
+  if (error) {
+    return <div className="text-center text-white">{error}</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         {project && fullVideoUrl && (
           <VideoEditor 
             title={project.title} 
             description={project.description} 
             url={fullVideoUrl} 
-            onDelete={() => console.log('Delete video logic here')} // Implement delete logic if needed
+            onDelete={() => console.log('Delete video logic here')}
           />
         )}
 
-        <h2 className="text-3xl font-bold text-white mb-8">Clips</h2>
+        <h2 className="text-3xl font-bold text-white mb-8 mt-12">Clips</h2>
         {status === 'Processing' ? (
           <div className="text-center">
             <p className="text-2xl text-white mb-4">Your clips are being generated...</p>
             <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-white mx-auto"></div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="space-y-8">
             {clips.map((clip) => (
               <ClipCard
                 key={clip.id}
@@ -119,13 +119,18 @@ const ProjectPage = () => {
                 duration={clip.duration}
                 onDelete={handleDeleteClip}
                 onSelect={handleClipSelect}
-                isSelected={selectedClips.includes(clip.id)} // Check if the clip is selected
-                onEditingOptionChange={handleEditingOptionChange} // Pass the function to handle editing options
+                isSelected={selectedClips.includes(clip.id)}
+                onEditingOptionChange={handleEditingOptionChange}
               />
             ))}
           </div>
         )}
-        <button onClick={handleSaveEdits} className="mt-4 bg-blue-500 text-white py-2 px-4 rounded">Save Edits</button>
+        <button 
+          onClick={handleSaveEdits} 
+          className="mt-8 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded transition duration-300"
+        >
+          Save Edits
+        </button>
       </div>
     </div>
   );

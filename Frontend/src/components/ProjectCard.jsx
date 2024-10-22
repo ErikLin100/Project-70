@@ -1,10 +1,27 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import { Video, Calendar, Trash2 } from 'lucide-react';
 
 const ProjectCard = ({ project, onDelete }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [statusBarClass, setStatusBarClass] = useState('bg-gray-500'); // Default color
+
+  useEffect(() => {
+    console.log('Project status:', project.status);
+    if (typeof project.status === 'string') {
+      const lowercaseStatus = project.status.toLowerCase();
+      if (lowercaseStatus === 'processing') {
+        setStatusBarClass('bg-yellow-400 animate-pulse');
+      } else if (lowercaseStatus === 'completed' || lowercaseStatus === 'done') {
+        setStatusBarClass('bg-green-500');
+      } else {
+        setStatusBarClass('bg-gray-500'); // Default for unknown status
+      }
+    } else {
+      console.error('Project status is not a string:', project.status);
+    }
+  }, [project.status]);
 
   const formatDate = (dateValue) => {
     if (dateValue && typeof dateValue === 'object' && '_seconds' in dateValue) {
@@ -32,7 +49,8 @@ const ProjectCard = ({ project, onDelete }) => {
   return (
     <div className="relative">
       <Link to={`/project/${project.id}`} className="block w-full">
-        <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:bg-gray-700 transition duration-150 ease-in-out h-48 flex flex-col justify-between relative">
+        <div className="bg-gray-800 p-6 rounded-lg shadow-lg hover:bg-gray-700 transition duration-150 ease-in-out h-48 flex flex-col justify-between relative overflow-hidden">
+          <div className={`absolute top-0 left-0 w-full h-1.5 ${statusBarClass}`} />
           <div>
             <h3 className="text-xl text-white font-semibold mb-2 truncate">{project.title}</h3>
             <p className="text-gray-400 mb-2">Status: {project.status}</p>

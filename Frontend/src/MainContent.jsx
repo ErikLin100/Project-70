@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
@@ -10,9 +9,9 @@ function MainContent() {
   const { user } = useAuth();
 
   return (
-    <div className="app">
+    <div className="flex min-h-screen">
       {user && <Navbar />}
-      <div className="container mx-auto px-2 py-4">
+      <div className={`flex-grow ${user ? 'ml-16' : ''}`}>
         <Routes>
           <Route path="/" element={user ? <Navigate to="/home" /> : <LandingPage />} />
           <Route path="/home" element={user ? <HomePage /> : <Navigate to="/" />} />
